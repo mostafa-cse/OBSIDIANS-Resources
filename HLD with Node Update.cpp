@@ -9,9 +9,6 @@ struct state {
 state make_identity() {
     return state{0};
 }
-state make_leaf(int v) {
-    return state{v};
-}
 state combine(const state &a, const state &b){
     state c;
     c.val = (a.val + b.val);
