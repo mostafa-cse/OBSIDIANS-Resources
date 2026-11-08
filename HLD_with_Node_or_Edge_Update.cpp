@@ -154,6 +154,41 @@ struct HLD {
         }
         seg.build(base);
     }
+    // Lowest Common Ancestor in O(log N)
+    int lca(int u, int v) {
+        while (head[u] != head[v]) {
+            if (depth[head[u]] < depth[head[v]]) {
+                swap(u, v);
+            }
+            u = parent[head[u]];
+        }
+        return (depth[u] < depth[v]) ? u : v;
+    }
+    // Number of edges between u and v in O(log N)
+    int dist(int u, int v) {
+        return depth[u] + depth[v] - 2 * depth[lca(u, v)];
+    }
+    // k-th ancestor of u in O(log N) (0-th is u; returns -1 if out of bounds)
+    int kth_ancestor(int u, int k) {
+        if (depth[u] < k) return -1;
+        while (u != -1) {
+            int d = depth[u] - depth[head[u]];
+            if (k <= d) return inv[pos[u] - k];
+            k -= d + 1;
+            u = parent[head[u]];
+        }
+        return -1;
+    }
+    // k-th node on simple path from u to v (0-indexed: 0-th is u; returns -1 if k > dist(u, v))
+    int kth_on_path(int u, int v, int k) {
+        int w = lca(u, v);
+        int d_uw = depth[u] - depth[w];
+        int d_vw = depth[v] - depth[w];
+        if (k > d_uw + d_vw) return -1;
+        if (k <= d_uw) return kth_ancestor(u, k);
+        return kth_ancestor(v, d_uw + d_vw - k);
+    }
+
 
     // Node value update: u-th node = x
     void pointSet(int u, int x) {
