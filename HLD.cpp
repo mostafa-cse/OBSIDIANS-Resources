@@ -1,3 +1,74 @@
+struct state {
+// add you node value
+    state() {}
+    state(int x) {
+        
+    }
+};
+state make_identity() {
+    return state{}; // add value as initial/out of bound
+}
+state combine(const state &a, const state &b) {
+    state c;
+    // add logic for combine left right
+    return c;
+}
+
+struct SegmentTree {
+    vector<state> sgt;
+    vector<state> a;
+    int n;
+    void init(int N) {
+        this->n = N;
+        a.assign(N + 1, make_identity());
+        sgt.assign(N * 4 + 4, make_identity());
+    }
+    void build(int node, int l, int r) {
+        if (l == r) {
+            sgt[node] = a[l];
+            return;
+        }
+        int mid = l + (r - l) / 2;
+        build(node * 2, l, mid);
+        build(node * 2 + 1, mid + 1, r);
+        sgt[node] = combine(sgt[2 * node], sgt[2 * node + 1]);
+    }
+    void update(int node, int l, int r, int idx, const state &value) {
+        if (l == r) {
+            sgt[node] = value;
+            return;
+        }
+        int mid = l + (r - l) / 2;
+        if (idx <= mid) {
+            update(node * 2, l, mid, idx, value);
+        } else {
+            update(node * 2 + 1, mid + 1, r, idx, value);
+        }
+        sgt[node] = combine(sgt[2 * node], sgt[2 * node + 1]);
+    }
+    state query(int node, int l, int r, int ql, int qr) {
+        if (l > qr or r < ql) {
+            return make_identity();
+        }
+        if (l >= ql and r <= qr) {
+            return sgt[node];
+        }
+        int mid = l + (r - l) / 2;
+        state left = query(node * 2, l, mid, ql, qr);
+        state right = query(node * 2 + 1, mid + 1, r, ql, qr);
+        return combine(left, right);
+    }
+    void build(const vector<state> &a) {
+        this->a = a;
+        build(1, 1, n);
+    }
+    void update(int idx, state val) { update(1, 1, n, idx, val); }
+    state query(int l, int r) { 
+        if (l > r) return make_identity();
+        return query(1, 1, n, l, r); 
+    }
+};
+
 struct HLD {
     int n;
     vector<vector<int>> g;
