@@ -16,7 +16,7 @@ struct SegmentTree {
     vector<state> a;
     int n;
     void init(int N) {
-        int n = N;
+        this->n = N;
         a.assign(N + 1, make_identity());
         sgt.assign(N * 4 + 4, make_identity());
     }
