@@ -151,7 +151,7 @@ struct HLD {
     }
     state SegmentQuery(int l, int r) { return seg.query(l, r); }
     state SubtreeQuery(int u) { return seg.query(pos[u], pos[u] + sz[u] - 1); }
-    int PathQuery(int u, int v) { return queryPath(u, v).val; }
+    state PathQuery(int u, int v) { return queryPath(u, v); }
 };
 void solve() {
     int n;
