@@ -43,6 +43,8 @@ public:
         return ans;
     }
 };
+// example 
+int cnt[10000]; // use for distinct number
 struct MOS : MoBase {
     int ans = 0;
     MOS(const vector<int> &arr, int alphabet_size) : MoBase(arr) {
