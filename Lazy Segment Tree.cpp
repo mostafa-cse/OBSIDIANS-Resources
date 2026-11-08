@@ -41,8 +41,9 @@ struct segment_tree {
         propagate(st[p], lz[p], f, r - l + 1);
     }
     void push(int p, int l, int r) {
-        apply(p << 1, l, r, lz[p]);
-        apply(p << 1 | 1, l, r, lz[p]);
+        int m = (l + r) >> 1;
+        apply(p << 1, l, m, lz[p]);
+        apply(p << 1 | 1, m + 1, r, lz[p]);
         lz[p] = identity_lazy();
     }
     void build(vector<state> &base, int p, int l, int r) {
