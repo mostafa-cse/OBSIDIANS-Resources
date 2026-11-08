@@ -1,37 +1,54 @@
-// https://vjudge.net/problem/LightOJ-1348
 #include <bits/stdc++.h>
 #define int long long
 using namespace std;
-#define all(x) x.begin(), x.end()
+
+const int INF = 1e18;
 
 struct state {
-    int val;
+    int sum, mn, mx;
+    state() : sum(0), mn(INF), mx(-INF) {}
+    state(int x) : sum(x), mn(x), mx(x) {}
+    state(int sum, int mn, int mx) : sum(sum), mn(mn), mx(mx) {}
 };
+
 struct lazy_state {
     int add, set;
     bool pending;
 };
-state combine(state a, state b) {
-    return {a.val + b.val};
-}
+
 state identity_state() {
-    return {0};
+    return state(0, INF, -INF);
 }
+
 lazy_state identity_lazy() {
     return {0, 0, false};
 }
+
+state combine(const state &a, const state &b) {
+    return state(
+        a.sum + b.sum,
+        min(a.mn, b.mn),
+        max(a.mx, b.mx)
+    );
+}
+
 void propagate(state &x, lazy_state &g, const lazy_state &f, int len) {
     if (f.pending) {
-        x.val = f.set * len;
+        x.sum = f.set * len;
+        x.mn = f.set;
+        x.mx = f.set;
         g.set = f.set;
         g.pending = true;
         g.add = 0;
     }
     if (f.add != 0) {
-        x.val += f.add * len;
+        x.sum += f.add * len;
+        x.mn += f.add;
+        x.mx += f.add;
         g.add += f.add;
     }
 }
+
 struct segment_tree {
     int n;
     vector<state> st;
@@ -46,11 +63,13 @@ struct segment_tree {
         propagate(st[p], lz[p], f, r - l + 1);
     }
     void push(int p, int l, int r) {
-        apply(p << 1, l, r, lz[p]);
-        apply(p << 1 | 1, l, r, lz[p]);
+        if (!lz[p].pending and lz[p].add == 0) return;
+        int mid = (l + r) >> 1;
+        apply(p << 1, l, mid, lz[p]);
+        apply(p << 1 | 1, mid + 1, r, lz[p]);
         lz[p] = identity_lazy();
     }
-    void build(vector<state> &base, int p, int l, int r) {
+    void build(const vector<state> &base, int p, int l, int r) {
         if (l == r) {
             st[p] = base[l];
             return;
@@ -81,9 +100,15 @@ struct segment_tree {
         state right = query(p << 1 | 1, mid + 1, r, ql, qr);
         return combine(left, right);
     }
-    void build(vector<state> &base) { build(base, 1, 1, n); }
-    void update(int l, int r, const lazy_state &f) { update(1, 1, n, l, r, f); }
-    state query(int l, int r) { return query(1, 1, n, l, r); }
+    void build(const vector<state> &base) { build(base, 1, 1, n); }
+    void update(int l, int r, const lazy_state &f) {
+        if (l > r) return;
+        update(1, 1, n, l, r, f);
+    }
+    state query(int l, int r) {
+        if (l > r) return identity_state();
+        return query(1, 1, n, l, r);
+    }
 };
 
 struct HLD {
@@ -91,10 +116,11 @@ struct HLD {
     vector<vector<int>> g;
     vector<int> val, parent, depth, heavy, sz, head, pos, jump;
     int cur_pos;
+    bool is_edge;
 
     segment_tree seg;
 
-    HLD(int _n) { init(_n); }
+    HLD(int _n = 0) { init(_n); }
 
     void init(int _n) {
         n = _n;
@@ -108,6 +134,7 @@ struct HLD {
         pos.assign(n + 1, 0);
         jump.assign(n + 1, 0);
         cur_pos = 1;
+        is_edge = false;
         seg.init(n);
     }
 
@@ -148,6 +175,7 @@ struct HLD {
         }
         return sz[u];
     }
+
     void dfs_hld(int u, int h) {
         head[u] = h;
         pos[u] = cur_pos++;
@@ -160,18 +188,43 @@ struct HLD {
             }
         }
     }
-    void build(int root = 1) {
+
+    // 1. Build for Node values
+    void build_node(int root = 1) {
+        is_edge = false;
         cur_pos = 1;
         seg.init(n);
         dfs_sz(root, -1);
         dfs_hld(root, root);
         vector<state> base(n + 1, identity_state());
-
         for (int u = 1; u <= n; u++) {
-            base[pos[u]] = {val[u]};
+            base[pos[u]] = state(val[u]);
         }
         seg.build(base);
     }
+
+    void build(int root = 1) { build_node(root); }
+
+    // 2. Build for Edge values: edges = {{u, v, weight}, ...}
+    void build_edge(int root, const vector<array<int, 3>> &edges) {
+        is_edge = true;
+        cur_pos = 1;
+        seg.init(n);
+        dfs_sz(root, -1);
+        dfs_hld(root, root);
+        for (auto &e : edges) {
+            int child = (depth[e[0]] > depth[e[1]]) ? e[0] : e[1];
+            setValue(child, e[2]);
+        }
+        vector<state> base(n + 1, identity_state());
+        for (int u = 1; u <= n; u++) {
+            if (u != root) {
+                base[pos[u]] = state(val[u]);
+            }
+        }
+        seg.build(base);
+    }
+
     int kth_ancestor(int u, int k) {
         int target = depth[u] - k;
         if (target < 1) return 0;
@@ -184,6 +237,7 @@ struct HLD {
         }
         return u;
     }
+
     int getLCA(int u, int v) {
         while (head[u] != head[v]) {
             if (depth[head[u]] < depth[head[v]]) {
@@ -193,9 +247,21 @@ struct HLD {
         }
         return (depth[u] < depth[v] ? u : v);
     }
-    void update_subtree(int u, const lazy_state &f) {
-        seg.update(pos[u], pos[u] + sz[u] - 1, f);
+
+    // ================= CORE UPDATE & QUERY =================
+    void update_node(int u, const lazy_state &f) {
+        seg.update(pos[u], pos[u], f);
     }
+
+    void update_edge(int u, int v, const lazy_state &f) {
+        int child = (depth[u] > depth[v]) ? u : v;
+        seg.update(pos[child], pos[child], f);
+    }
+
+    void update_subtree(int u, const lazy_state &f) {
+        seg.update(pos[u] + is_edge, pos[u] + sz[u] - 1, f);
+    }
+
     void update_path(int u, int v, const lazy_state &f) {
         while (head[u] != head[v]) {
             if (depth[head[u]] < depth[head[v]]) {
@@ -207,11 +273,13 @@ struct HLD {
         if (depth[u] > depth[v]) {
             swap(u, v);
         }
-        seg.update(pos[u], pos[v], f);
+        seg.update(pos[u] + is_edge, pos[v], f);
     }
+
     state query_subtree(int u) {
-        return seg.query(pos[u], pos[u] + sz[u] - 1);
+        return seg.query(pos[u] + is_edge, pos[u] + sz[u] - 1);
     }
+
     state query_path(int u, int v) {
         state ans_u = identity_state(), ans_v = identity_state();
         while (head[u] != head[v]) {
@@ -224,63 +292,32 @@ struct HLD {
             }
         }
         if (depth[u] > depth[v]) {
-            ans_u = combine(seg.query(pos[v], pos[u]), ans_u);
+            ans_u = combine(seg.query(pos[v] + is_edge, pos[u]), ans_u);
         } else {
-            ans_v = combine(seg.query(pos[u], pos[v]), ans_v);
+            ans_v = combine(seg.query(pos[u] + is_edge, pos[v]), ans_v);
         }
         return combine(ans_u, ans_v);
     }
+
+    // ================= ADD UPDATES (+x) =================
+    void add_node(int u, int x)         { update_node(u, {x, 0, false}); }
+    void add_edge(int u, int v, int x)  { update_edge(u, v, {x, 0, false}); }
+    void add_path(int u, int v, int x)  { update_path(u, v, {x, 0, false}); }
+    void add_subtree(int u, int x)      { update_subtree(u, {x, 0, false}); }
+
+    // ============= ASSIGNMENT UPDATES (=x) ==============
+    void set_node(int u, int x)         { update_node(u, {0, x, true}); }
+    void set_edge(int u, int v, int x)  { update_edge(u, v, {0, x, true}); }
+    void set_path(int u, int v, int x)  { update_path(u, v, {0, x, true}); }
+    void set_subtree(int u, int x)      { update_subtree(u, {0, x, true}); }
+
+    // ============= DIRECT PATH QUERIES ==================
+    int query_path_sum(int u, int v)    { return query_path(u, v).sum; }
+    int query_path_min(int u, int v)    { return query_path(u, v).mn; }
+    int query_path_max(int u, int v)    { return query_path(u, v).mx; }
+
+    // ============ DIRECT SUBTREE QUERIES ================
+    int query_subtree_sum(int u)        { return query_subtree(u).sum; }
+    int query_subtree_min(int u)        { return query_subtree(u).mn; }
+    int query_subtree_max(int u)        { return query_subtree(u).mx; }
 };
-void solve() {
-    int n;
-    cin >> n;
-
-    HLD hld(n);
-    for (int u = 1; u <= n; u++) {
-        int x; cin >> x;
-        hld.setValue(u, x);
-    }
-
-    for (int i = 1; i < n; i++) {
-        int u, v;
-        cin >> u >> v;
-        u++, v++;
-        hld.addEdge(u, v);
-    }
-    hld.build();
-
-    int q;
-    cin >> q;
-    while (q--) {
-        int t;
-        cin >> t;
-
-        if (t == 0) {
-            int u, v;
-            cin >> u >> v;
-            u++, v++;
-
-            state ans = hld.query_path(u, v);
-            cout << ans.val << endl;
-        } else {
-            int u, x;
-            cin >> u >> x;
-            u++;
-            lazy_state cng = {0, x, true};
-            hld.update_path(u, u, cng);
-        }
-    }
-}
-signed main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL), cout.tie(NULL);
-    int n;
-    cin >> n;
-
-    for (int i = 1; i <= n; i++) {
-        cout << "Case " << i << ":\n";
-        solve();
-    }
-    return 0;
-}
-
