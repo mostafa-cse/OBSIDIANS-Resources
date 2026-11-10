@@ -15,10 +15,11 @@ state identity_state() {
 lazy_state identity_lazy() {
     return {0, 0, false};        // edit here
 }
-void propagate(state &x, lazy_state &g, const lazy_state &f, int len) {
+void propagate(state &x, lazy_state &g, const lazy_state &f, int l, int r) {
+    long long len = r - l + 1;   // For min/max, len multiplier should be 1
     if (f.pending) {
-        x.val = f.assignemnt * len;
-        g.assignemnt = f.assignemnt;
+        x.val = f.assignment * len;
+        g.assignment = f.assignment;
         g.pending = true;
         g.add = 0;
     }
@@ -38,7 +39,7 @@ struct segment_tree {
         lz.assign(4 * n + 4, identity_lazy());
     }
     void apply(int p, int l, int r, const lazy_state &f) {
-        propagate(st[p], lz[p], f, r - l + 1);
+        propagate(st[p], lz[p], f, l, r);
     }
     void push(int p, int l, int r) {
         int m = (l + r) >> 1;
