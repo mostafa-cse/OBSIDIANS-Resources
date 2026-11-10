@@ -42,6 +42,7 @@ struct segment_tree {
         propagate(st[p], lz[p], f, l, r);
     }
     void push(int p, int l, int r) {
+        if (!lz[p].pending && lz[p].add == 0) return; 
         int m = (l + r) >> 1;
         apply(p << 1, l, m, lz[p]);
         apply(p << 1 | 1, m + 1, r, lz[p]);
