@@ -1,5 +1,6 @@
-static const int MAX_NODES = 2000005;
-static const int B = 63;
+static const int MAX_NODES = 6400005; // Adjust to ~64 * MAX_INSERTIONS + 5
+static const int B = 63;              // Use 62 if numbers are strictly non-negative signed long long
+
 class BitwiseTrie {
 private:
     int trie[MAX_NODES][2];
@@ -19,21 +20,21 @@ public:
         nodes_cnt = 1;
     }
 
-    int count(int num) {
+    int count(long long num) {
         int cur = 0;
         for (int b = B; b >= 0; --b) {
-            int bit = (num >> b) & 1;
+            int bit = ((unsigned long long)num >> b) & 1;
             if (!trie[cur][bit]) return 0;
             cur = trie[cur][bit];
         }
         return cnt[cur];
     }
 
-    void insert(int num) {
+    void insert(long long num) {
         int cur = 0;
         cnt[cur]++;
         for (int b = B; b >= 0; --b) {
-            int bit = (num >> b) & 1;
+            int bit = ((unsigned long long)num >> b) & 1;
             if (!trie[cur][bit]) {
                 trie[cur][bit] = nodes_cnt++;
             }
@@ -42,26 +43,27 @@ public:
         }
     }
 
-    void remove(int num) {
+    void remove(long long num) {
         if (count(num) == 0) return;
 
         int cur = 0;
         cnt[cur]--;
         for (int b = B; b >= 0; --b) {
-            int bit = (num >> b) & 1;
+            int bit = ((unsigned long long)num >> b) & 1;
             cur = trie[cur][bit];
             cnt[cur]--;
         }
     }
 
-    int queryMaxXor(int num) {
+    long long queryMaxXor(long long num) {
         if (cnt[0] == 0) return 0;
-        int cur = 0, res = 0;
+        int cur = 0;
+        long long res = 0;
         for (int b = B; b >= 0; --b) {
-            int bit = (num >> b) & 1;
+            int bit = ((unsigned long long)num >> b) & 1;
             int want = bit ^ 1;
             if (trie[cur][want] && cnt[trie[cur][want]] > 0) {
-                res |= (1LL << b);
+                res |= (1ULL << b);
                 cur = trie[cur][want];
             } else {
                 cur = trie[cur][bit];
@@ -70,18 +72,19 @@ public:
         return res;
     }
 
-    int queryMinXor(int num) {
+    long long queryMinXor(long long num) {
         if (cnt[0] == 0) return 0;
-        int cur = 0, res = 0;
+        int cur = 0;
+        long long res = 0;
         for (int b = B; b >= 0; --b) {
-            int bit = (num >> b) & 1;
+            int bit = ((unsigned long long)num >> b) & 1;
             if (trie[cur][bit] && cnt[trie[cur][bit]] > 0) {
                 cur = trie[cur][bit];
             } else {
-                res |= (1LL << b);
+                res |= (1ULL << b);
                 cur = trie[cur][bit ^ 1];
             }
         }
         return res;
     }
-} btr; // declare this globally for ignoring stack memory and reset before use
+} btr; // Declare globally to avoid stack overflow; call btr.reset() between test cases
