@@ -1,10 +1,10 @@
 static const int MAX_NODES = 2000005;
-static const int B = 64;
+static const int B = 63;
 class BitwiseTrie {
 private:
     int trie[MAX_NODES][2];
     int cnt[MAX_NODES];
-    int nodes_cnt = 40;
+    int nodes_cnt = 1;
 
 public:
     BitwiseTrie() {
@@ -61,7 +61,7 @@ public:
             int bit = (num >> b) & 1;
             int want = bit ^ 1;
             if (trie[cur][want] && cnt[trie[cur][want]] > 0) {
-                res |= (1 << b);
+                res |= (1LL << b);
                 cur = trie[cur][want];
             } else {
                 cur = trie[cur][bit];
@@ -78,10 +78,10 @@ public:
             if (trie[cur][bit] && cnt[trie[cur][bit]] > 0) {
                 cur = trie[cur][bit];
             } else {
-                res |= (1 << b);
+                res |= (1LL << b);
                 cur = trie[cur][bit ^ 1];
             }
         }
         return res;
     }
-};
+} btr; // declare this globally for ignoring stack memory and reset before use
