@@ -2,7 +2,7 @@ struct state {
     int val;
 };
 struct lazy_state {
-    int add, assignemnt;
+    int add, assignment;
     bool pending;
 };
 state combine(state a, state b) {
