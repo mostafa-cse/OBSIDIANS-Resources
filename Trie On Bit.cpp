@@ -4,7 +4,7 @@ class BitwiseTrie {
 private:
     int trie[MAX_NODES][2];
     int cnt[MAX_NODES];
-    int nodes_cnt;
+    int nodes_cnt = 40;
 
 public:
     BitwiseTrie() {
