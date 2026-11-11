@@ -45,6 +45,7 @@ struct segment_tree {
         if (!lz[p].pending && lz[p].add == 0) return; 
         int m = (l + r) >> 1;
         apply(p << 1, l, m, lz[p]);
+        // u can modify lazy_state f for right and pass from here
         apply(p << 1 | 1, m + 1, r, lz[p]);
         lz[p] = identity_lazy();
     }
